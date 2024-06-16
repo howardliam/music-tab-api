@@ -80,8 +80,8 @@ func LoadConfig() Config {
 	return config
 }
 
-func ConfigIsDefault(config *Config) bool {
+func ConfigIsDefault(conf *Config) bool {
 	def := defaultConfig()
 
-	return def == *config
+	return def == *conf
 }
