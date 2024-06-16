@@ -1,0 +1,8 @@
+server:
+    port: 3000
+postgres:
+    address: localhost
+    port: 5432
+    databasename: music-tabs
+    username: postgres
+    password: postgres
