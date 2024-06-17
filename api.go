@@ -45,9 +45,11 @@ func main() {
 
 	// Set up middleware
 	zapLogger, _ := zap.NewProduction()
-
 	e.Use(echozap.ZapLogger(zapLogger))
 	e.Use(middleware.Recover())
+
+	// Error handler
+	e.HTTPErrorHandler = routes.ErrorHandler
 
 	// Routes
 	e.GET("/", routes.Root)

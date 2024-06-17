@@ -11,18 +11,24 @@ import (
 func GetAllBands(c echo.Context) error {
 	tc := c.(*utils.TabContext)
 
-	var result []models.Band
-	tc.DB.Model(&models.Band{}).Find(&result)
+	var bands []models.Band
+	tc.DB.Model(&models.Band{}).Find(&bands)
 
-	return c.JSON(http.StatusOK, result)
+	res := utils.Response{
+		StatusCode: http.StatusOK,
+		Data:       bands,
+		Error:      nil,
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 func GetBandById(c echo.Context) error {
 	tc := c.(*utils.TabContext)
 
 	param := tc.Param("id")
-	var result models.Band
-	err := tc.DB.Model(&models.Band{}).First(&result, param).Error
+	var band models.Band
+	err := tc.DB.Model(&models.Band{}).First(&band, param).Error
 	if err != nil {
 		res := utils.Response{
 			StatusCode: http.StatusNotFound,
@@ -34,5 +40,11 @@ func GetBandById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, res)
 	}
 
-	return c.JSON(http.StatusOK, result)
+	res := utils.Response{
+		StatusCode: http.StatusOK,
+		Data:       band,
+		Error:      nil,
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
