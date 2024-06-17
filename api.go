@@ -66,6 +66,9 @@ func main() {
 	// Error handler
 	e.HTTPErrorHandler = routes.ErrorHandler
 
+	// Icon
+	e.File("/favicon.ico", "static/images/favicon.ico")
+
 	// Routes
 	e.GET("/", routes.Root)
 
