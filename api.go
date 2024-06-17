@@ -2,17 +2,20 @@ package main
 
 import (
 	"log"
-	"strconv"
+	"net/http"
+	"os"
 	"time"
 
-	"github.com/brpaz/echozap"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/howardliam/music-tab-api/config"
 	"github.com/howardliam/music-tab-api/database"
 	"github.com/howardliam/music-tab-api/routes"
+	"github.com/howardliam/music-tab-api/security"
 	"github.com/howardliam/music-tab-api/utils"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 func main() {
@@ -43,9 +46,21 @@ func main() {
 		}
 	})
 
-	// Set up middleware
-	zapLogger, _ := zap.NewProduction()
-	e.Use(echozap.ZapLogger(zapLogger))
+	// Logger
+	logger := zerolog.New(os.Stdout)
+	loggerConfig := middleware.RequestLoggerConfig{
+		LogURI:      true,
+		LogStatus:   true,
+		LogRemoteIP: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			logger.Info().Str("URI", v.URI).Int("status", v.Status).Str("IP", v.RemoteIP).Msg("request")
+			return nil
+		},
+	}
+	e.Use(middleware.RequestLoggerWithConfig(loggerConfig))
+	// e.Use(middleware.Logger())
+
+	// Error recovery
 	e.Use(middleware.Recover())
 
 	// Error handler
@@ -53,9 +68,40 @@ func main() {
 
 	// Routes
 	e.GET("/", routes.Root)
-	e.GET("/bands", routes.GetAllBands)
-	e.GET("/bands/:id", routes.GetBandById)
+
+	auth := e.Group("/login")
+	auth.POST("", routes.Login)
+
+	/* Secured routes start */
+	jwtConf := echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(security.JWTClaims)
+		},
+		SigningKey: []byte("SuperSecret"),
+	}
+
+	// Bands routes
+	bands := e.Group("/bands")
+	bands.Use(echojwt.WithConfig(jwtConf))
+	bands.GET("", routes.GetAllBands)
+	bands.GET("/:id", routes.GetBandById)
+
+	// Albums routes
+	albums := e.Group("/albums")
+	albums.Use(echojwt.WithConfig(jwtConf))
+
+	// Songs routes
+	songs := e.Group("/songs")
+	songs.Use(echojwt.WithConfig(jwtConf))
+
+	// Tabs routes
+	tabs := e.Group("/tabs")
+	tabs.Use(echojwt.WithConfig(jwtConf))
+	/* Secured routes end */
 
 	// Start web server
-	e.Logger.Fatal(e.Start(":" + strconv.Itoa(int(conf.Server.Port))))
+	// if err := e.StartTLS(utils.GenerateAddress(conf.Server), "cert", "key"); err != http.ErrServerClosed {
+	if err := e.Start(utils.GenerateAddress(conf.Server)); err != http.ErrServerClosed {
+		e.Logger.Fatal(err)
+	}
 }
