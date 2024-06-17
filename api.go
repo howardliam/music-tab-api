@@ -70,7 +70,7 @@ func main() {
 	e.File("/favicon.ico", "static/images/favicon.ico")
 
 	// Routes
-	e.GET("/", routes.Root)
+	e.File("/", "static/view/index.html")
 
 	auth := e.Group("/login")
 	auth.POST("", routes.Login)
